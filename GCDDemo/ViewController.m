@@ -16,7 +16,7 @@
 
 -(void) touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
-    [self test8];
+    [self testForSyncAndConcurrent];
 }
 
 /**
@@ -195,6 +195,46 @@
     NSLog(@"%@", @"完成!");
 }
 
+/**
+ *  同步执行下的相同串行队列的卡死分析
+ */
+-(void) testForSyncAndSerial
+{
+    // 创建队列
+    dispatch_queue_t queue = dispatch_queue_create("xf", DISPATCH_QUEUE_SERIAL);
+    // 异步启动任务,他将在新的线程中执行，作为测试的根线程
+    dispatch_async(queue,^{
+        NSLog(@"execute task1 in thread : %@  start!" , [NSThread currentThread]);
+        // 在当前线程中使用与根线程相同的串行队列进行新任务的同步执行
+        dispatch_sync(queue,^{
+            NSLog(@"execute task2 in thread : %@" , [NSThread currentThread]);
+        });
+        NSLog(@"execute task1 in thread : %@  end!", [NSThread currentThread]);
+    });
+    
+    NSLog(@"%@", @"完成!");
+}
+
+
+/**
+ *  同步执行下的相同串行队列的卡死分析
+ */
+-(void) testForSyncAndConcurrent
+{
+    // 创建队列
+    dispatch_queue_t queue = dispatch_queue_create("xf", DISPATCH_QUEUE_CONCURRENT);
+    // 异步启动任务,他将在新的线程中执行，作为测试的根线程
+    dispatch_async(queue,^{
+        NSLog(@"execute task1 in thread : %@  start!" , [NSThread currentThread]);
+        // 在当前线程中使用与根线程相同的串行队列进行新任务的同步执行
+        dispatch_sync(queue,^{
+            NSLog(@"execute task2 in thread : %@" , [NSThread currentThread]);
+        });
+        NSLog(@"execute task1 in thread : %@  end!", [NSThread currentThread]);
+    });
+    
+    NSLog(@"%@", @"完成!");
+}
 
 
 
