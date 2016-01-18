@@ -227,9 +227,12 @@
     dispatch_async(queue,^{
         NSLog(@"execute task1 in thread : %@  start!" , [NSThread currentThread]);
         // 在当前线程中使用与根线程相同的串行队列进行新任务的同步执行
+        for (int i = 0; i < 10; i++)
+        {
         dispatch_sync(queue,^{
-            NSLog(@"execute task2 in thread : %@" , [NSThread currentThread]);
+            NSLog(@"execute task %d in thread : %@" , i, [NSThread currentThread]);
         });
+        }
         NSLog(@"execute task1 in thread : %@  end!", [NSThread currentThread]);
     });
     
