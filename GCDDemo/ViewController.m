@@ -9,15 +9,97 @@
 #import "ViewController.h"
 
 @interface ViewController ()
+@property (weak, nonatomic) IBOutlet UIImageView *image;
 
 @end
 
+
 @implementation ViewController
+
 
 -(void) touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
-    [self testForSyncAndConcurrent];
+    [self once];
 }
+
+-(void)loadImage
+{
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        // 1. 网络上图片的URL
+        NSURL *url = [NSURL URLWithString:@"http://att2.citysbs.com/hangzhou/image1/2010/06/28-14/middle_20100628_479774d896cf207fed251P3nfB3V8Pmp.jpg"];
+        
+        // 2. 获取网络图片数据，二进制
+        NSData *data = [NSData dataWithContentsOfURL:url];
+        
+        // 3. 二进制数据转换成图片
+        UIImage *image = [UIImage imageWithData:data];
+        
+        // 4.通知主线程更新UI
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.image.image = image;
+        });
+        
+    });
+
+}
+
+-(void) delayExecute
+{
+    // 延迟时间
+    dispatch_time_t when = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC));
+    NSLog(@"start at %@", [NSDate new]);
+    
+    // 指定队列，延迟指定时间后执行任务
+    dispatch_after(when, dispatch_get_global_queue(0, 0), ^{
+        NSLog(@"end at %@", [NSDate new]);
+        NSLog(@"%@", [NSThread currentThread]);
+    });
+}
+
+-(void) group
+{
+    // 实例化一个调度组
+    dispatch_group_t group = dispatch_group_create();
+    
+    // 创建或者获取队列
+    dispatch_queue_t queue1 = dispatch_get_global_queue(0, 0);
+    
+    // 将任务放入队列，包进到指定group
+    dispatch_group_async(group, queue1, ^{
+        NSLog(@"下载小说A----%@", [NSThread currentThread]);
+    });
+    
+    // 创建或者获取队列
+    dispatch_queue_t queue2 = dispatch_queue_create("xf", DISPATCH_QUEUE_CONCURRENT);
+    dispatch_group_async(group, queue2, ^{
+        NSLog(@"下载小说B----%@", [NSThread currentThread]);
+    });
+    
+    // 创建或者获取队列
+    dispatch_queue_t queue3 = dispatch_queue_create("xf", DISPATCH_QUEUE_SERIAL);
+    dispatch_group_async(group, queue3, ^{
+        NSLog(@"下载小说C----%@", [NSThread currentThread]);
+    });
+    
+    // 创建或者获取队列
+    dispatch_queue_t queue4 = dispatch_get_main_queue();
+    dispatch_group_notify(group, queue4, ^{
+        NSLog(@"下载完成，请观看----%@", [NSThread currentThread]);
+    });
+}
+
+-(void)once
+{
+    static dispatch_once_t onceToken = -1;
+    NSLog(@"out onceToken is %ld", onceToken);
+    dispatch_once(&onceToken, ^{
+        NSLog(@"in onceToken is %ld", onceToken);
+        NSLog(@"执行了一次！");
+    });
+    
+    NSLog(@"完成");
+}
+
 
 /**
  *  串行队列+同步方式执行任务
